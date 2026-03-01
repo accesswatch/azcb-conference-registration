@@ -1,4 +1,13 @@
 <?php
+/*
+Plugin Name: AZCB Membership Lookup
+Plugin URI: https://github.com/accesswatch/azcb-conference-registration
+Description: Membership lookup for Gravity Forms — fetches CSV and fills hidden fields. Configure with AZCB_MEMBERS_CSV_URL or Settings → AZCB Members CSV.
+Version: 1.0.0
+Author: AccessWatch
+License: GPLv2 or later
+*/
+
 /**
  * AZCB Membership Lookup — Code Snippet (recovered from user)
  *
@@ -21,6 +30,66 @@ function azcb_membership_lookup_and_fill( $entry, $form ) {
         return $entry;
     }
 
+        /**
+         * Admin: simple settings page to set the AZCB members CSV URL.
+         * Constant `AZCB_MEMBERS_CSV_URL` (if defined) will take precedence over this option.
+         */
+        add_action( 'admin_menu', 'azcb_members_csv_admin_menu' );
+        function azcb_members_csv_admin_menu() {
+            add_options_page(
+                'AZCB Members CSV',
+                'AZCB Members CSV',
+                'manage_options',
+                'azcb-members-csv',
+                'azcb_members_csv_options_page'
+            );
+        }
+
+        function azcb_members_csv_options_page() {
+            if ( ! current_user_can( 'manage_options' ) ) {
+                return;
+            }
+
+            if ( ! empty( $_POST ) && check_admin_referer( 'azcb_members_csv_save', 'azcb_members_csv_nonce' ) ) {
+                $url = trim( wp_unslash( $_POST['azcb_members_csv_url'] ?? '' ) );
+                $url = esc_url_raw( $url );
+                update_option( 'azcb_members_csv_url', $url );
+                echo '<div class="updated"><p>Saved.</p></div>';
+            }
+
+            $current = esc_attr( get_option( 'azcb_members_csv_url', 'https://azcb.org/wp-content/uploads/2025/10/azcb_members.csv' ) );
+            ?>
+            <div class="wrap">
+                <h1>AZCB Members CSV</h1>
+                <form method="post">
+                    <?php
+                    settings_fields( 'azcb_members_csv_group' );
+                    do_settings_sections( 'azcb-members-csv' );
+                    wp_nonce_field( 'azcb_members_csv_save', 'azcb_members_csv_nonce' );
+                    ?>
+                    <table class="form-table">
+                        <tr valign="top">
+                            <th scope="row"><label for="azcb_members_csv_url">CSV URL</label></th>
+                            <td>
+                                <input type="text" id="azcb_members_csv_url" name="azcb_members_csv_url" value="<?php echo $current; ?>" class="regular-text" />
+                                <p class="description">Enter the URL to the members CSV in the Media Library. Define the constant <code>AZCB_MEMBERS_CSV_URL</code> to override.</p>
+                            </td>
+                        </tr>
+                    </table>
+                    <?php submit_button(); ?>
+                </form>
+            </div>
+            <?php
+        }
+
+        /**
+         * Register the CSV URL setting with a sanitize callback.
+         */
+        add_action( 'admin_init', 'azcb_members_csv_register_setting' );
+        function azcb_members_csv_register_setting() {
+            register_setting( 'azcb_members_csv_group', 'azcb_members_csv_url', 'esc_url_raw' );
+        }
+
         // Activation: set a sensible default option unless overridden by constant.
         if ( ! function_exists( 'azcb_members_csv_activate' ) ) {
             function azcb_members_csv_activate() {
@@ -32,9 +101,7 @@ function azcb_membership_lookup_and_fill( $entry, $form ) {
                 }
             }
         }
-        if ( function_exists( 'register_activation_hook' ) ) {
-            register_activation_hook( __FILE__, 'azcb_members_csv_activate' );
-        }
+        register_activation_hook( __FILE__, 'azcb_members_csv_activate' );
 
         // Uninstall: remove the option.
         if ( ! function_exists( 'azcb_members_csv_uninstall' ) ) {
@@ -42,9 +109,7 @@ function azcb_membership_lookup_and_fill( $entry, $form ) {
                 delete_option( 'azcb_members_csv_url' );
             }
         }
-        if ( function_exists( 'register_uninstall_hook' ) ) {
-            register_uninstall_hook( __FILE__, 'azcb_members_csv_uninstall' );
-        }
+        register_uninstall_hook( __FILE__, 'azcb_members_csv_uninstall' );
 
     // CSV URL: prefer a defined constant, then an admin option, then the original default.
     $csv_url = defined( 'AZCB_MEMBERS_CSV_URL' )
@@ -217,66 +282,4 @@ function azcb_membership_lookup_and_fill( $entry, $form ) {
     error_log( "AZCB FindMembership: MATCH for $first $last ($email) $zip | life=$is_life | entry {$entry['id']}" );
 
     return $entry;
-}
-
-
-/**
- * Admin: simple settings page to set the AZCB members CSV URL.
- * Constant `AZCB_MEMBERS_CSV_URL` (if defined) will take precedence over this option.
- */
-add_action( 'admin_menu', 'azcb_members_csv_admin_menu' );
-function azcb_members_csv_admin_menu() {
-    add_options_page(
-        'AZCB Members CSV',
-        'AZCB Members CSV',
-        'manage_options',
-        'azcb-members-csv',
-        'azcb_members_csv_options_page'
-    );
-}
-
-function azcb_members_csv_options_page() {
-    if ( ! current_user_can( 'manage_options' ) ) {
-        return;
-    }
-
-    // Handle save
-    if ( ! empty( $_POST ) && check_admin_referer( 'azcb_members_csv_save', 'azcb_members_csv_nonce' ) ) {
-        $url = trim( wp_unslash( $_POST['azcb_members_csv_url'] ?? '' ) );
-        $url = esc_url_raw( $url );
-        update_option( 'azcb_members_csv_url', $url );
-        echo '<div class="updated"><p>Saved.</p></div>';
-    }
-
-    $current = esc_attr( get_option( 'azcb_members_csv_url', 'https://azcb.org/wp-content/uploads/2025/10/azcb_members.csv' ) );
-    ?>
-    <div class="wrap">
-        <h1>AZCB Members CSV</h1>
-        <form method="post">
-            <?php
-            settings_fields( 'azcb_members_csv_group' );
-            do_settings_sections( 'azcb-members-csv' );
-            wp_nonce_field( 'azcb_members_csv_save', 'azcb_members_csv_nonce' );
-            ?>
-            <table class="form-table">
-                <tr valign="top">
-                    <th scope="row"><label for="azcb_members_csv_url">CSV URL</label></th>
-                    <td>
-                        <input type="text" id="azcb_members_csv_url" name="azcb_members_csv_url" value="<?php echo $current; ?>" class="regular-text" />
-                        <p class="description">Enter the URL to the members CSV in the Media Library. Define the constant <code>AZCB_MEMBERS_CSV_URL</code> to override.</p>
-                    </td>
-                </tr>
-            </table>
-            <?php submit_button(); ?>
-        </form>
-    </div>
-    <?php
-}
-
-/**
- * Register the CSV URL setting with a sanitize callback.
- */
-add_action( 'admin_init', 'azcb_members_csv_register_setting' );
-function azcb_members_csv_register_setting() {
-    register_setting( 'azcb_members_csv_group', 'azcb_members_csv_url', 'esc_url_raw' );
 }
