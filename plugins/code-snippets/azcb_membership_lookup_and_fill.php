@@ -216,8 +216,9 @@ function azcb_members_csv_options_page() {
     }
 
     // Handle save
-    if ( isset( $_POST['azcb_members_csv_url'] ) && check_admin_referer( 'azcb_members_csv_save', 'azcb_members_csv_nonce' ) ) {
-        $url = trim( wp_unslash( $_POST['azcb_members_csv_url'] ) );
+    if ( ! empty( $_POST ) && check_admin_referer( 'azcb_members_csv_save', 'azcb_members_csv_nonce' ) ) {
+        $url = trim( wp_unslash( $_POST['azcb_members_csv_url'] ?? '' ) );
+        $url = esc_url_raw( $url );
         update_option( 'azcb_members_csv_url', $url );
         echo '<div class="updated"><p>Saved.</p></div>';
     }
@@ -227,7 +228,11 @@ function azcb_members_csv_options_page() {
     <div class="wrap">
         <h1>AZCB Members CSV</h1>
         <form method="post">
-            <?php wp_nonce_field( 'azcb_members_csv_save', 'azcb_members_csv_nonce' ); ?>
+            <?php
+            settings_fields( 'azcb_members_csv_group' );
+            do_settings_sections( 'azcb-members-csv' );
+            wp_nonce_field( 'azcb_members_csv_save', 'azcb_members_csv_nonce' );
+            ?>
             <table class="form-table">
                 <tr valign="top">
                     <th scope="row"><label for="azcb_members_csv_url">CSV URL</label></th>
@@ -241,4 +246,12 @@ function azcb_members_csv_options_page() {
         </form>
     </div>
     <?php
+}
+
+/**
+ * Register the CSV URL setting with a sanitize callback.
+ */
+add_action( 'admin_init', 'azcb_members_csv_register_setting' );
+function azcb_members_csv_register_setting() {
+    register_setting( 'azcb_members_csv_group', 'azcb_members_csv_url', 'esc_url_raw' );
 }
