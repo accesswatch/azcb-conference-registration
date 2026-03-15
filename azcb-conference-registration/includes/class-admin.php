@@ -221,6 +221,13 @@ class AZCB_Conf_Admin {
 
         $clean['enable_convention_redirect'] = ! empty( $input['enable_convention_redirect'] ) ? 1 : 0;
 
+        $clean['gf_form_id'] = isset( $input['gf_form_id'] ) ? max( 0, intval( $input['gf_form_id'] ) ) : 0;
+
+        $gf_field_keys = array( 'gf_field_first_name', 'gf_field_last_name', 'gf_field_email' );
+        foreach ( $gf_field_keys as $f ) {
+            $clean[ $f ] = isset( $input[ $f ] ) ? sanitize_text_field( $input[ $f ] ) : '';
+        }
+
         $text_fields = array(
             'verify_heading', 'verify_button_text', 'sent_heading',
             'register_heading', 'register_button_text',
@@ -304,6 +311,12 @@ class AZCB_Conf_Admin {
         $this->text_field( 'contact_url', 'Contact Page URL', 'regular-text', 'Used in {contact_url} placeholder.' );
         $this->text_field( 'membership_url', 'Membership Page URL', 'regular-text', 'Used in {membership_url} placeholder.' );
         $this->checkbox_field( 'enable_convention_redirect', 'Enable /convention/ → /conference/ Redirect', 'Redirect visitors from the old URL to the conference page.' );
+
+        echo '<tr><td colspan="2"><h2>Gravity Forms Lookup</h2><p class="description">Optional: cross-reference registrants against a Gravity Forms membership form in addition to the CSV file.</p></td></tr>';
+        $this->number_field( 'gf_form_id', 'Gravity Forms Form ID', 'The form whose entries will be searched. Set to 0 to disable.', 0 );
+        $this->gf_field_select( 'gf_field_first_name', 'First Name Field', 'Select the form field that contains the first name.' );
+        $this->gf_field_select( 'gf_field_last_name',  'Last Name Field',  'Select the form field that contains the last name.' );
+        $this->gf_field_select( 'gf_field_email',      'Email Field',      'Select the form field that contains the email address.' );
     }
 
     private function render_pages_tab() {
@@ -366,7 +379,7 @@ class AZCB_Conf_Admin {
         <?php
     }
 
-    private function number_field( $key, $label, $desc = '' ) {
+    private function number_field( $key, $label, $desc = '', $min = 1 ) {
         ?>
         <tr>
             <th scope="row"><label for="azcb_<?php echo esc_attr( $key ); ?>"><?php echo esc_html( $label ); ?></label></th>
@@ -374,7 +387,7 @@ class AZCB_Conf_Admin {
                 <input type="number" id="azcb_<?php echo esc_attr( $key ); ?>"
                        name="azcb_conf_settings[<?php echo esc_attr( $key ); ?>]"
                        value="<?php echo esc_attr( intval( $this->val( $key ) ) ); ?>"
-                       min="1" class="small-text">
+                       min="<?php echo esc_attr( $min ); ?>" class="small-text">
                 <?php if ( $desc ) : ?><p class="description"><?php echo esc_html( $desc ); ?></p><?php endif; ?>
             </td>
         </tr>
@@ -411,11 +424,64 @@ class AZCB_Conf_Admin {
     }
 
     /**
+     * Render a dropdown of Gravity Forms fields for the configured form.
+     */
+    private function gf_field_select( $key, $label, $desc = '' ) {
+        $form_id = intval( azcb_conf_get_setting( 'gf_form_id' ) );
+        $current = $this->val( $key );
+        $options = array();
+
+        if ( $form_id && class_exists( 'GFAPI' ) ) {
+            $form = GFAPI::get_form( $form_id );
+            if ( $form && ! empty( $form['fields'] ) ) {
+                foreach ( $form['fields'] as $field ) {
+                    // Fields with sub-inputs (e.g. Name → First / Last).
+                    if ( ! empty( $field->inputs ) ) {
+                        foreach ( $field->inputs as $input ) {
+                            if ( ! empty( $input['isHidden'] ) ) {
+                                continue;
+                            }
+                            $options[ (string) $input['id'] ] = $field->label . ' — ' . $input['label'] . ' (' . $input['id'] . ')';
+                        }
+                    } else {
+                        $options[ (string) $field->id ] = $field->label . ' (' . $field->id . ')';
+                    }
+                }
+            }
+        }
+        ?>
+        <tr>
+            <th scope="row"><label for="azcb_<?php echo esc_attr( $key ); ?>"><?php echo esc_html( $label ); ?></label></th>
+            <td>
+                <?php if ( ! class_exists( 'GFAPI' ) ) : ?>
+                    <p class="description"><em>Gravity Forms is not active. Install and activate Gravity Forms to enable this feature.</em></p>
+                <?php elseif ( ! $form_id ) : ?>
+                    <p class="description"><em>Enter a Form ID above and save to load field options.</em></p>
+                <?php elseif ( empty( $options ) ) : ?>
+                    <p class="description"><em>No fields found for Form ID <?php echo esc_html( $form_id ); ?>. Please verify the form exists.</em></p>
+                <?php else : ?>
+                    <select id="azcb_<?php echo esc_attr( $key ); ?>"
+                            name="azcb_conf_settings[<?php echo esc_attr( $key ); ?>]">
+                        <option value="">— Auto-detect —</option>
+                        <?php foreach ( $options as $id => $field_label ) : ?>
+                            <option value="<?php echo esc_attr( $id ); ?>" <?php selected( $current, $id ); ?>>
+                                <?php echo esc_html( $field_label ); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                <?php endif; ?>
+                <?php if ( $desc ) : ?><p class="description"><?php echo esc_html( $desc ); ?></p><?php endif; ?>
+            </td>
+        </tr>
+        <?php
+    }
+
+    /**
      * Render hidden inputs for settings on OTHER tabs so they
      * are not wiped when saving a single tab.
      */
     private function render_hidden_settings( $all, $current_tab ) {
-        $general_keys = array( 'csv_url', 'csv_cache_minutes', 'magic_link_expiry_minutes', 'rate_limit_per_hour', 'contact_url', 'membership_url', 'enable_convention_redirect' );
+        $general_keys = array( 'csv_url', 'csv_cache_minutes', 'magic_link_expiry_minutes', 'rate_limit_per_hour', 'contact_url', 'membership_url', 'enable_convention_redirect', 'gf_form_id', 'gf_field_first_name', 'gf_field_last_name', 'gf_field_email' );
         $pages_keys   = array( 'verify_heading', 'verify_intro', 'verify_button_text', 'verify_footer', 'sent_heading', 'sent_message', 'register_heading', 'register_intro', 'register_button_text', 'member_confirm_heading', 'member_confirm_message', 'nonmember_confirm_heading', 'nonmember_confirm_message' );
         $emails_keys  = array( 'magic_link_email_subject', 'magic_link_email_body', 'member_email_subject', 'member_email_body', 'nonmember_email_subject', 'nonmember_email_body' );
 

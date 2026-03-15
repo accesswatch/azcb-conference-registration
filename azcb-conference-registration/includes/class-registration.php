@@ -82,11 +82,20 @@ class AZCB_Conf_Registration {
             return;
         }
 
-        // CSV lookup (silent).
+        // Membership lookup: CSV first, then Gravity Forms as fallback.
         $match       = AZCB_Conf_CSV_Lookup::find( $first_name, $last_name, $email );
         $is_member   = $match ? 1 : 0;
         $is_lifetime = $match ? (int) AZCB_Conf_CSV_Lookup::is_lifetime( $match ) : 0;
         $member_data = $match ? wp_json_encode( $match, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ) : '';
+
+        if ( ! $match ) {
+            $gf_match = AZCB_Conf_GF_Lookup::find( $first_name, $last_name, $email );
+            if ( $gf_match ) {
+                $is_member   = 1;
+                $is_lifetime = (int) AZCB_Conf_GF_Lookup::is_lifetime( $gf_match );
+                $member_data = wp_json_encode( $gf_match, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
+            }
+        }
 
         // Create token.
         $token = AZCB_Conf_Magic_Link::create( array(

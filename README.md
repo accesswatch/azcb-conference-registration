@@ -59,6 +59,13 @@ Go to **AZCB Conference → Settings** in the admin sidebar.
 | Contact Page URL | Used in `{contact_url}` placeholders | `https://azcb.org/contact-us/` |
 | Membership Page URL | Used in `{membership_url}` placeholders | `https://azcb.org/membership/` |
 | /convention/ → /conference/ Redirect | 302 redirect from old URL | Enabled |
+| **Gravity Forms Lookup** | | |
+| Gravity Forms Form ID | Form whose entries are searched (0 to disable) | `12` |
+| First Name Field | GF field mapped to first name (or auto-detect) | Auto-detect |
+| Last Name Field | GF field mapped to last name (or auto-detect) | Auto-detect |
+| Email Field | GF field mapped to email address (or auto-detect) | Auto-detect |
+
+> **Note:** The Gravity Forms lookup is a secondary membership check. The CSV is checked first; Gravity Forms entries are only queried if the CSV has no match. Gravity Forms must be installed and active for the dropdowns and lookup to work. Set the Form ID, save, then select fields from the dropdowns.
 
 #### Page Content Tab
 
@@ -121,6 +128,27 @@ Navigate to **AZCB Conference → Registrations** to:
 * **Resend confirmation email** — row action to re-send
 * **Delete** a registration
 * **Export CSV** — downloads all registrations as a UTF-8 CSV file
+
+---
+
+## Shortcodes
+
+The plugin registers four shortcodes. On activation it creates pages with these shortcodes already embedded — you do **not** need to add them manually unless you want to move the flow to different pages.
+
+| Shortcode | Purpose | Auto-created page |
+|-----------|---------|-------------------|
+| `[azcb_conference_verify]` | Email verification form (step 1) | `/conference/verify/` |
+| `[azcb_conference_sent]` | "Check your email" confirmation | `/conference/verify/sent/` |
+| `[azcb_conference_register]` | Registration form after magic-link click (step 2) | `/conference/register/` |
+| `[azcb_conference_confirmation]` | Post-registration confirmation (step 3) | `/conference/register/confirmation/` |
+
+To link visitors into the registration flow from your conference page, add a button or link:
+
+```html
+<a href="/conference/verify/" class="wp-block-button__link">Register for the Conference</a>
+```
+
+Or embed the verification form directly on any page with `[azcb_conference_verify]`.
 
 ---
 

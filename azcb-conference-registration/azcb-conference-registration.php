@@ -22,6 +22,7 @@ define( 'AZCB_CONF_DB_VERSION', '1.0' );
 /* ─── Load classes ────────────────────────────────────────────────── */
 require_once AZCB_CONF_DIR . 'includes/class-activator.php';
 require_once AZCB_CONF_DIR . 'includes/class-csv-lookup.php';
+require_once AZCB_CONF_DIR . 'includes/class-gf-lookup.php';
 require_once AZCB_CONF_DIR . 'includes/class-magic-link.php';
 require_once AZCB_CONF_DIR . 'includes/class-email.php';
 require_once AZCB_CONF_DIR . 'includes/class-registration.php';
@@ -77,6 +78,10 @@ function azcb_conf_defaults() {
         'contact_url'                => 'https://azcb.org/contact-us/',
         'membership_url'             => 'https://azcb.org/membership/',
         'enable_convention_redirect' => 1,
+        'gf_form_id'                 => 12,
+        'gf_field_first_name'        => '',
+        'gf_field_last_name'         => '',
+        'gf_field_email'             => '',
 
         /* ── Verify page ────────────────────────────────────────── */
         'verify_heading'     => 'Conference Registration — Email Verification',
@@ -95,11 +100,14 @@ function azcb_conf_defaults() {
 
         /* ── Member confirmation ────────────────────────────────── */
         'member_confirm_heading' => 'Confirmation',
-        'member_confirm_message' => 'Thank you for registering for the 2026 AZCB Conference and Annual Business Meeting! As a member of AZCB, you will receive links for all conference related meetings, including the AZCB Annual Business Meeting. If you do not receive these links by Thursday, April 10, and/or if you have questions about the conference, please <a href="{contact_url}">Contact us Here</a>.',
+        'member_confirm_message' => 'Thank you for registering for the 2026 AZCB Conference and Annual Business Meeting! As a member of AZCB, you will receive links for all conference related meetings, including the AZCB Annual Business Meeting.'
+            . "\n\n" . 'AZCB leadership will cross-reference your registration to verify your information. Once confirmed, we will forward all convention-related details to you.'
+            . "\n\n" . 'If you do not receive these details by Thursday, April 10, and/or if you have questions about the conference, please <a href="{contact_url}">Contact us Here</a>.',
 
         /* ── Non-member confirmation ────────────────────────────── */
         'nonmember_confirm_heading' => 'Confirmation',
         'nonmember_confirm_message' => 'Thank you for registering for the 2026 AZCB Conference! You will receive links for conference-related meetings.'
+            . "\n\n" . 'AZCB leadership will cross-reference your registration to verify your information. Once confirmed, we will forward all convention-related details to you.'
             . "\n\n" . 'Our records did not show a current AZCB membership associated with your information. If you believe you are a member in good standing (meaning that you have registered and paid dues for 2026), please <a href="{contact_url}">Contact us Here</a> and we will be happy to verify your status and ensure you receive access to the Annual Business Meeting.'
             . "\n\n" . 'If you would like to become a member of the AZCB, please visit the <a href="{membership_url}">Membership Page</a>, fill in the required information, and provide the required dues, and we will happily add you to our growing organization. If you do so before the start of the convention, you will then be able to join us for our 2026 Annual Business Meeting.'
             . "\n\n" . 'If you have other questions about the conference, please <a href="{contact_url}">Contact us Here</a>.',
@@ -118,13 +126,15 @@ function azcb_conf_defaults() {
         'member_email_subject' => 'AZCB Conference Registration — Confirmation',
         'member_email_body'    => 'Hi {first_name},'
             . "\n\n" . 'Thank you for registering for the 2026 AZCB Conference and Annual Business Meeting! As a member of AZCB, you will receive links for all conference related meetings, including the AZCB Annual Business Meeting.'
-            . "\n\n" . 'If you do not receive these links by Thursday, April 10, and/or if you have questions about the conference, please visit <a href="{contact_url}">{contact_url}</a>.'
+            . "\n\n" . 'AZCB leadership will cross-reference your registration to verify your information. Once confirmed, we will forward all convention-related details to you.'
+            . "\n\n" . 'If you do not receive these details by Thursday, April 10, and/or if you have questions about the conference, please visit <a href="{contact_url}">{contact_url}</a>.'
             . "\n\n" . 'Arizona Council of the Blind',
 
         /* ── Non-member confirmation email ──────────────────────── */
         'nonmember_email_subject' => 'AZCB Conference Registration — Confirmation',
         'nonmember_email_body'    => 'Hi {first_name},'
             . "\n\n" . 'Thank you for registering for the 2026 AZCB Conference! You will receive links for conference-related meetings.'
+            . "\n\n" . 'AZCB leadership will cross-reference your registration to verify your information. Once confirmed, we will forward all convention-related details to you.'
             . "\n\n" . 'Our records did not show a current AZCB membership associated with your information. If you believe you are a member in good standing, please visit <a href="{contact_url}">{contact_url}</a> and we will be happy to verify your status.'
             . "\n\n" . 'If you would like to become a member, please visit <a href="{membership_url}">{membership_url}</a> for more information.'
             . "\n\n" . 'Arizona Council of the Blind',
