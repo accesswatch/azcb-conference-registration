@@ -112,8 +112,10 @@ Checks (in order):
 2. **No authentication** — The lookup is just name+email+zip matching. No passwords, no tokens, no session.
 3. **Pre-fill data available** — On a successful match, fields 11–30 provide the full member profile that can be used to pre-fill the conference registration form.
 4. **Stale data risk** — CSV is dated October 2025 per the URL path. Members who joined/changed data since then won't match or will have outdated info.
-5. **The conference registration magic link** can reuse this same lookup approach (CSV + 4-field match) but should add email verification (send link to matched email) for security.
-6. **Lifetime members** get special treatment — the `is_life` flag could affect conference pricing or registration options.
+5. **Unified flow** — All registrants enter the same path (name + email → magic link → register). The system silently checks CSV membership and stores `is_member` (1 = found, 0 = not found). The non-member confirmation gracefully handles both true non-members and members who couldn't be matched, inviting them to contact AZCB.
+6. **The conference registration magic link** verifies every registrant's email while also carrying the CSV lookup result and pre-fill data.
+7. **Two-state member status** — `is_member` (1/0) replaces the earlier three-state model. Simplifies the flow and data model.
+8. **Lifetime members** get special treatment — the `is_life` flag could affect conference pricing or registration options.
 
 ## Source File Locations
 

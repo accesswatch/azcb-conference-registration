@@ -1,0 +1,163 @@
+/*
+ * AZCB Conference Registration — Frontend Styles
+ *
+ * Designed for WCAG 2.1 AA accessibility:
+ *  - Visible focus indicators
+ *  - Sufficient colour contrast
+ *  - Logical reading order
+ *  - Responsive layout
+ */
+
+/* ── Form wrapper ────────────────────────────────────────────── */
+.azcb-form-wrap {
+    max-width: 640px;
+    margin: 0 auto 2em;
+    line-height: 1.6;
+}
+
+/* ── Intro & footer text ─────────────────────────────────────── */
+.azcb-intro,
+.azcb-footer,
+.azcb-message {
+    margin-bottom: 1.5em;
+}
+
+.azcb-footer {
+    margin-top: 2em;
+    padding-top: 1em;
+    border-top: 1px solid #ddd;
+}
+
+/* ── Form fields ─────────────────────────────────────────────── */
+.azcb-form .azcb-field {
+    margin-bottom: 1.25em;
+}
+
+.azcb-form label {
+    display: block;
+    margin-bottom: 0.35em;
+    font-weight: 600;
+}
+
+.azcb-form label .required {
+    color: #b32d2e;
+}
+
+.azcb-form input[type="text"],
+.azcb-form input[type="email"],
+.azcb-form input[type="tel"] {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    padding: 0.55em 0.75em;
+    font-size: 1em;
+    border: 1px solid #888;
+    border-radius: 4px;
+    background: #fff;
+    color: #222;
+    box-sizing: border-box;
+}
+
+.azcb-form input:focus {
+    outline: 2px solid #005fcc;
+    outline-offset: 1px;
+    border-color: #005fcc;
+}
+
+.azcb-form input[readonly] {
+    background: #f5f5f5;
+    color: #555;
+    cursor: not-allowed;
+}
+
+/* ── Honeypot (visually hidden, not display:none so assistive tech can skip it) ── */
+.azcb-hp {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+/* ── Submit button ───────────────────────────────────────────── */
+.azcb-actions {
+    margin-top: 1.5em;
+}
+
+.azcb-button {
+    display: inline-block;
+    padding: 0.7em 2em;
+    font-size: 1.05em;
+    font-weight: 600;
+    color: #fff;
+    background: #005fcc;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.azcb-button:hover,
+.azcb-button:focus {
+    background: #004599;
+}
+
+.azcb-button:focus-visible {
+    outline: 3px solid #ffbf47;
+    outline-offset: 2px;
+}
+
+/* ── Error / notice blocks ───────────────────────────────────── */
+.azcb-notice {
+    padding: 1em 1.25em;
+    margin-bottom: 1.5em;
+    border-left: 4px solid;
+    border-radius: 3px;
+}
+
+.azcb-notice-error {
+    background: #fef0f0;
+    border-color: #b32d2e;
+    color: #611;
+}
+
+.azcb-notice-error ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.azcb-notice-error li + li {
+    margin-top: 0.4em;
+}
+
+.azcb-notice-error a {
+    color: #b32d2e;
+    text-decoration: underline;
+}
+
+/* ── Confirmation pages ──────────────────────────────────────── */
+.azcb-confirmation {
+    padding: 1em 0;
+}
+
+.azcb-confirmation h2 {
+    margin-bottom: 0.75em;
+}
+
+/* ── Sent page ───────────────────────────────────────────────── */
+.azcb-sent h2 {
+    margin-bottom: 0.75em;
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 480px) {
+    .azcb-form-wrap {
+        padding: 0 0.75em;
+    }
+
+    .azcb-button {
+        width: 100%;
+        text-align: center;
+    }
+}

@@ -1,8 +1,8 @@
 # Product Requirements Document: AZCB 2026 Conference Registration System
 
 **Project:** Arizona Council of the Blind — 2026 Annual Conference & Business Meeting Registration  
-**Version:** 1.0  
-**Date:** February 26, 2026  
+**Version:** 1.2  
+**Date:** March 15, 2026  
 **Stakeholder:** Wesley (AZCB)  
 **Developer:** Jeff  
 
@@ -10,12 +10,13 @@
 
 ## 1. Overview
 
-Build a multi-step conference registration flow for the AZCB 2026 Annual Conference and Business Meeting. The system must:
+Build a unified conference registration flow for the AZCB 2026 Annual Conference and Business Meeting. The system must:
 
-- Verify AZCB membership via a magic-link email flow before registration.
-- Allow non-members to register directly without the magic-link verification.
-- Pre-fill registration fields for verified members.
-- Deliver distinct confirmation messages based on membership status.
+- Provide a **single registration path** for all attendees (no member/non-member fork).
+- Use a magic-link email flow to verify every registrant's email address.
+- Silently look up AZCB membership via CSV and determine status automatically.
+- Pre-fill registration fields for recognized members.
+- Deliver distinct confirmation messages based on membership status (member vs. non-member).
 - Store conference registration data **separately** from AZCB membership records.
 
 ---
@@ -25,7 +26,9 @@ Build a multi-step conference registration flow for the AZCB 2026 Annual Confere
 | Goal | Metric |
 |------|--------|
 | Enable online registration for virtual conference | Registrants can complete the flow end-to-end |
-| Distinguish members from non-members | Members receive business meeting links; non-members do not |
+| Single, fluid registration path | No member/non-member choice — everyone enters the same way |
+| Automatic membership detection | System silently determines member status via CSV; members get business meeting links |
+| Graceful non-match handling | Users not found in CSV get conference access + helpful guidance to contact AZCB if they believe they're members |
 | Maintain data separation | Conference registrations stored in a dedicated dataset, not in membership records |
 | Accessibility | All pages fully accessible (WCAG 2.1 AA minimum) — critical for this user base |
 
@@ -41,35 +44,52 @@ azcb.org/convention/ ──302 redirect──► azcb.org/conference/
                                             ▼
                                     [Conference Landing Page]
                                             │
-                              ┌─────────────┴─────────────┐
-                              ▼                           ▼
-                   [Member Verification]         [Non-Member Registration]
-                   (magic link flow)              (direct to Registration Page)
-                              │
-                              ▼
-                   [Magic Link Sent Page]
-                              │
-                       (email link clicked)
-                              │
-                              ▼
-                   [Registration Page]
-                   (fields pre-filled)
-                              │
-                              ▼
-              ┌───────────────┴───────────────┐
-              ▼                               ▼
-   [Member Confirmation]           [Non-Member Confirmation]
-              │                               │
-              ▼                               ▼
-   [Email: Member Confirmation]    [Email: Non-Member Confirmation]
+                                   single "Register" button
+                                            │
+                                            ▼
+                                  [Email Verification Page]
+                                  (name + email — everyone)
+                                            │
+                                            ▼
+                                     [CSV Lookup]
+                                     (silent, automatic)
+                                      ┌───┴───┐
+                                      ▼       ▼
+                                  Found    Not Found
+                                      │       │
+                                      ▼       ▼
+                              (status:    (status:
+                               member)    non_member)
+                                      │       │
+                                      └───┬───┘
+                                          ▼
+                                [Magic Link Email Sent]
+                                (to everyone — verifies email)
+                                          │
+                                   (email link clicked)
+                                          │
+                                          ▼
+                                [Registration Page]
+                                (pre-filled if member;
+                                 blank if non-member)
+                                          │
+                                          ▼
+                           ┌──────────────┴──────────────┐
+                           ▼                             ▼
+                  [Member Confirmation]         [Non-Member Confirmation]
+                           │                             │
+                           ▼                             ▼
+                  [Email: Member]              [Email: Non-Member]
 ```
 
 ### 3.2 User Personas
 
 | Persona | Description |
 |---------|-------------|
-| **AZCB Member** | Has registered and paid 2026 dues. Enters via member verification flow. Receives business meeting links. |
-| **Non-Member** | Not a current AZCB member. Registers directly. Receives conference links only (not business meeting). |
+| **AZCB Member** | Current member found in the CSV. Enters the same unified flow as everyone. Fields pre-filled from CSV data. Receives business meeting links + conference links. |
+| **Non-Member** | Not found in CSV. Could be a true non-member, a recent joiner, or a member with mismatched data. Enters the same unified flow. Fields not pre-filled. Receives conference links only. Confirmation includes guidance to contact AZCB if they believe they should be recognized as a member. |
+
+> **Design note:** The system never asks users to self-identify. Everyone enters the same door. Membership is determined silently by CSV lookup. The non-member confirmation copy gracefully handles both true non-members and members who couldn't be matched.
 
 ---
 
@@ -86,41 +106,37 @@ azcb.org/convention/ ──302 redirect──► azcb.org/conference/
 
 ### 4.2 Conference Landing Page — `/conference/`
 
-**Purpose:** Entry point. Provides conference information and routes users to the appropriate registration path.
+**Purpose:** Entry point. Provides conference information and routes users into the unified registration flow.
 
 **Content:**
 - Conference details / welcome copy (existing page content)
-- Link/button at the bottom navigating to the **Member Verification Page**
+- Single **"Register for the Conference"** button at the bottom
 
 **Navigation:**
-- "Register as a Member" → `/conference/verify/` (or equivalent)
-- "Non-Member Registration" button → direct to `/conference/register/` (or external form)
+- "Register for the Conference" → `/conference/verify/` (everyone enters here)
 
 ---
 
-### 4.3 Member Verification Page — `/conference/verify/`
+### 4.3 Email Verification Page — `/conference/verify/`
 
-**Purpose:** Collect identifying information from users who claim AZCB membership, then send a magic link to verify their email.
+**Purpose:** Collect identifying information from all registrants and send a magic link to verify their email. Membership status is determined silently via CSV lookup — the user is never asked whether they are a member.
 
 **Page Copy:**
 
-> **Conference Registration for AZCB Members**
+> **Conference Registration — Email Verification**
 >
-> If you are an AZCB member, please fill in the following information, so we can verify your eligibility, and simplify your online conference registration.
->
-> Non-members, please tap this button to be taken to the online registration form.
+> Welcome! To register for the 2026 AZCB Conference and Annual Business Meeting, please provide the following information. We will send you an email with a link to complete your registration.
 
 **Form Fields:**
 
 | Field | Type | Required | Notes |
 |-------|------|----------|-------|
-| First Name | Text input | Yes | Used for magic link token & pre-fill |
-| Last Name | Text input | Yes | Used for magic link token & pre-fill |
+| First Name | Text input | Yes | Used for CSV lookup & pre-fill |
+| Last Name | Text input | Yes | Used for CSV lookup & pre-fill |
 | Your Email Address | Email input | Yes | Magic link sent here |
 
 **Actions:**
-- **"Verify Membership Status"** button (submit) → Triggers magic link email, redirects to Magic Link Sent page
-- **Non-member CTA button** → Navigates to the registration form (non-member path)
+- **"Continue"** button (submit) → Triggers magic link email, redirects to Magic Link Sent page
 
 **Footer:**
 > Have Questions?
@@ -129,9 +145,11 @@ azcb.org/convention/ ──302 redirect──► azcb.org/conference/
 
 **Backend Logic:**
 1. Receive form submission (first name, last name, email).
-2. Generate a time-limited magic link token (see §5.1).
-3. Look up the submitted info against the membership dataset to determine member status. Store the result with the token.
-4. Send magic link email to the provided address.
+2. Silently look up the submitted info against the membership CSV.
+3. Generate a time-limited magic link token (see §5.1). Store the lookup result as `member_status`:
+   - `member` — match found in CSV (fields will be pre-filled on registration page)
+   - `non_member` — no match found in CSV
+4. Send magic link email to the provided address (everyone gets a magic link).
 5. Redirect browser to the Magic Link Sent page.
 
 ---
@@ -142,9 +160,9 @@ azcb.org/convention/ ──302 redirect──► azcb.org/conference/
 
 **Page Copy:**
 
-> **Verifying Your Membership Status**
+> **Check Your Email**
 >
-> Thanks for submitting your Membership Verification. Please go to your email inbox and click the link to continue with the Conference Registration. Note: This link expires in **30 minutes**.
+> Thanks! We've sent a registration link to your email address. Please check your inbox and click the link to continue with conference registration. Note: This link expires in **30 minutes**.
 
 **Design Notes:**
 - The expiration time (e.g., 15 minutes) should be configurable; placeholder shown as "xx minutes" in the original spec — **confirm exact value with Wesley**.
@@ -176,8 +194,9 @@ azcb.org/convention/ ──302 redirect──► azcb.org/conference/
 - **"Complete your Registration"** button (submit)
 
 **Behavior:**
-- If the user arrives via a valid magic link token → fields are pre-filled from the verification submission (and/or membership data). Membership status is known.
-- If the user arrives as a non-member (no token, or direct link) → fields are blank. Membership status = non-member.
+- If the user arrives via a valid magic link token with `member_status=member` → fields are pre-filled from CSV membership data.
+- If the user arrives via a valid magic link token with `member_status=non_member` → first name, last name, and email are pre-filled from the verification submission (no CSV data). Other fields blank.
+- If the user arrives with no token (direct URL visit) → redirected to `/conference/verify/` to start the flow.
 - On submit:
   1. Validate all required fields.
   2. Save registration to the **conference registration dataset** (separate from membership).
@@ -186,7 +205,7 @@ azcb.org/convention/ ──302 redirect──► azcb.org/conference/
 
 ---
 
-### 4.6 Confirmation Page — Verified AZCB Members
+### 4.6 Confirmation Page — AZCB Members
 
 **Route:** `/conference/register/confirmation/` (with member context)
 
@@ -206,11 +225,13 @@ azcb.org/convention/ ──302 redirect──► azcb.org/conference/
 
 > **Confirmation**
 >
-> Thank you for registering for the 2026 AZCB Conference. Our records indicate that you are not currently a member of the Arizona Council of the Blind, so you will receive links for conference-related meetings, but not for the AZCB Annual Business Meeting.
+> Thank you for registering for the 2026 AZCB Conference! You will receive links for conference-related meetings.
+>
+> Our records did not show a current AZCB membership associated with your information. If you believe you are a member in good standing (meaning that you have registered and paid dues for 2026), please [Contact us Here](https://azcb.org/contact-us/) and we will be happy to verify your status and ensure you receive access to the Annual Business Meeting.
 >
 > If you would like to become a member of the AZCB, please visit the [Membership Page](https://azcb.org/membership/), fill in the required information, and provide the required dues, and we will happily add you to our growing organization. If you do so before the start of the convention, you will then be able to join us for our 2026 Annual Business Meeting.
 >
-> If you believe you are a member in good standing (meaning that you have registered and paid dues for 2026), and/or if you have other questions about the conference, please [Contact us Here](https://azcb.org/contact-us/).
+> If you have other questions about the conference, please [Contact us Here](https://azcb.org/contact-us/).
 
 ---
 
@@ -224,7 +245,7 @@ azcb.org/convention/ ──302 redirect──► azcb.org/conference/
 | Expiration | Configurable; default **30 minutes** |
 | Single-use | Token is invalidated after first successful use |
 | Storage | Server-side token store with expiry (DB or cache) |
-| Payload | Links to: first name, last name, email, membership verification result |
+| Payload | Links to: first name, last name, email, `member_status` (member/non_member), member data (if member) |
 
 **Magic Link Email:**
 - **Subject:** "AZCB Conference Registration — Verify Your Email"
@@ -235,9 +256,9 @@ azcb.org/convention/ ──302 redirect──► azcb.org/conference/
 Two email templates, sent upon successful registration:
 
 | Template | Recipient | Content |
-|----------|-----------|---------|
-| Member Confirmation | Verified AZCB members | Same copy as §4.6 |
-| Non-Member Confirmation | Non-members | Same copy as §4.7 |
+|----------|-----------|----------|
+| Member Confirmation | AZCB members (found in CSV) | Same copy as §4.6 |
+| Non-Member Confirmation | Non-members (not found in CSV) | Same copy as §4.7 |
 
 ### 5.3 Data Storage
 
@@ -255,8 +276,8 @@ Implemented as two custom WordPress database tables created by the plugin on act
 | email | varchar(200), UNIQUE | One registration per email |
 | mobile_phone | varchar(30) | Optional |
 | zip_code | varchar(20) | Required |
-| is_member | tinyint(1) | 1 = verified AZCB member, 0 = non-member |
-| is_lifetime | tinyint(1) | 1 = lifetime member |
+| is_member | tinyint(1) | 1 = AZCB member (found in CSV), 0 = not found |
+| is_lifetime | tinyint(1) | 1 = lifetime member (only meaningful when is_member = 1) |
 | registered_at | datetime | UTC timestamp |
 | confirmation_sent | tinyint(1) | Whether confirmation email was sent |
 
@@ -269,8 +290,8 @@ Implemented as two custom WordPress database tables created by the plugin on act
 | email | varchar(200), INDEX | Recipient email |
 | first_name | varchar(100) | From verification form |
 | last_name | varchar(100) | From verification form |
-| is_member | tinyint(1) | CSV lookup result |
-| is_lifetime | tinyint(1) | CSV lifetime flag |
+| is_member | tinyint(1) | 1 = found in CSV, 0 = not found |
+| is_lifetime | tinyint(1) | CSV lifetime flag (only set when is_member = 1) |
 | member_data | longtext | JSON of all CSV columns for pre-fill |
 | created_at | datetime | UTC |
 | expires_at | datetime | created_at + 30 minutes |
@@ -279,7 +300,8 @@ Implemented as two custom WordPress database tables created by the plugin on act
 **Membership Lookup (read-only):**
 - Reads the existing CSV at `wp-content/uploads/2025/10/azcb_members.csv`
 - Matches on First Name + Last Name + Email (case-insensitive)
-- The system **never writes** to the membership dataset.
+- The system **never writes** to the membership dataset
+- If no match is found, the user is still allowed to proceed (is_member = 0)
 
 ### 5.4 URL Structure Summary
 
@@ -287,7 +309,7 @@ Implemented as two custom WordPress database tables created by the plugin on act
 |-----|---------|--------|
 | `/convention/` | 302 redirect to `/conference/` | GET |
 | `/conference/` | Conference landing page | GET |
-| `/conference/verify/` | Member verification form | GET, POST |
+| `/conference/verify/` | Email verification form (all registrants) | GET, POST |
 | `/conference/verify/sent/` | Magic link sent confirmation | GET |
 | `/conference/register/` | Registration form | GET, POST |
 | `/conference/register/confirmation/` | Post-registration confirmation | GET |
