@@ -52,7 +52,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                    value="<?php echo esc_attr( $form_data['email'] ); ?>"
                    required autocomplete="email"
                    aria-required="true"
-                   readonly>
+                   <?php if ( ! empty( $token ) ) echo 'readonly'; ?>>
         </div>
 
         <div class="azcb-field">

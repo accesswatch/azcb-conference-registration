@@ -150,6 +150,28 @@
     margin-bottom: 0.75em;
 }
 
+/* ── Non-member link block (verify page) ─────────────────────── */
+.azcb-nonmember-link {
+    margin-bottom: 1.5em;
+    padding: 1em 1.25em;
+    background: #f5f8fc;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.azcb-nonmember-link p {
+    margin: 0 0 0.75em;
+}
+
+.azcb-button-secondary {
+    background: #555;
+}
+
+.azcb-button-secondary:hover,
+.azcb-button-secondary:focus {
+    background: #333;
+}
+
 /* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 480px) {
     .azcb-form-wrap {

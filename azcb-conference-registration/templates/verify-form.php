@@ -2,7 +2,7 @@
 /**
  * Template: Email Verification Form
  *
- * Variables: $heading, $intro, $button_text, $footer, $errors, $form_data
+ * Variables: $heading, $intro, $nonmember_text, $nonmember_url, $button_text, $footer, $errors, $form_data
  */
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
@@ -13,6 +13,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 
     <?php if ( $intro ) : ?>
         <div class="azcb-intro"><?php echo wp_kses_post( $intro ); ?></div>
+    <?php endif; ?>
+
+    <?php if ( ! empty( $nonmember_text ) && ! empty( $nonmember_url ) ) : ?>
+        <div class="azcb-nonmember-link">
+            <p><?php echo esc_html( $nonmember_text ); ?></p>
+            <a href="<?php echo esc_url( $nonmember_url ); ?>" class="azcb-button azcb-button-secondary">Non-Member Registration</a>
+        </div>
     <?php endif; ?>
 
     <?php if ( ! empty( $errors ) ) : ?>

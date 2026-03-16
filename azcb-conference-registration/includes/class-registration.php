@@ -136,12 +136,20 @@ class AZCB_Conf_Registration {
             exit;
         }
 
-        // Validate token.
-        $token_str = sanitize_text_field( wp_unslash( $_POST['azcb_token'] ?? '' ) );
-        $token     = AZCB_Conf_Magic_Link::validate( $token_str );
-        if ( is_wp_error( $token ) ) {
-            $this->errors[] = $token->get_error_message();
-            return;
+        $token_str   = sanitize_text_field( wp_unslash( $_POST['azcb_token'] ?? '' ) );
+        $token       = null;
+        $is_member   = 0;
+        $is_lifetime = 0;
+
+        if ( $token_str ) {
+            // Member path: validate the magic-link token.
+            $token = AZCB_Conf_Magic_Link::validate( $token_str );
+            if ( is_wp_error( $token ) ) {
+                $this->errors[] = $token->get_error_message();
+                return;
+            }
+            $is_member   = (int) $token['is_member'];
+            $is_lifetime = (int) $token['is_lifetime'];
         }
 
         $first_name   = sanitize_text_field( wp_unslash( $_POST['first_name'] ?? '' ) );
@@ -149,15 +157,18 @@ class AZCB_Conf_Registration {
         $mobile_phone = sanitize_text_field( wp_unslash( $_POST['mobile_phone'] ?? '' ) );
         $zip_code     = sanitize_text_field( wp_unslash( $_POST['zip_code'] ?? '' ) );
 
-        // Use the verified email from the token — not from POST (field is readonly,
-        // but could be tampered with; using the token value prevents email-squatting).
-        $email = $token['email'];
+        // For token-based submissions use the verified email; for tokenless (non-member)
+        // submissions accept the email from the form.
+        $email = $token ? $token['email'] : sanitize_email( wp_unslash( $_POST['email'] ?? '' ) );
 
         if ( ! $first_name ) {
             $this->errors[] = 'Please enter your first name.';
         }
         if ( ! $last_name ) {
             $this->errors[] = 'Please enter your last name.';
+        }
+        if ( ! is_email( $email ) ) {
+            $this->errors[] = 'Please enter a valid email address.';
         }
         if ( ! $zip_code ) {
             $this->errors[] = 'Please enter your zip code.';
@@ -168,9 +179,7 @@ class AZCB_Conf_Registration {
 
         // Persist registration.
         global $wpdb;
-        $table       = $wpdb->prefix . 'azcb_conf_registrations';
-        $is_member   = (int) $token['is_member'];
-        $is_lifetime = (int) $token['is_lifetime'];
+        $table = $wpdb->prefix . 'azcb_conf_registrations';
 
         $result = $wpdb->insert(
             $table,
@@ -194,8 +203,10 @@ class AZCB_Conf_Registration {
             return;
         }
 
-        // Consume token.
-        AZCB_Conf_Magic_Link::consume( $token_str );
+        // Consume token (if member path).
+        if ( $token_str ) {
+            AZCB_Conf_Magic_Link::consume( $token_str );
+        }
 
         // Send confirmation email.
         $sent = AZCB_Conf_Email::send_confirmation( $email, $first_name, (bool) $is_member );
@@ -235,12 +246,14 @@ class AZCB_Conf_Registration {
         );
 
         return $this->load_template( 'verify-form', array(
-            'heading'     => azcb_conf_get_setting( 'verify_heading' ),
-            'intro'       => azcb_conf_replace_placeholders( azcb_conf_get_setting( 'verify_intro' ) ),
-            'button_text' => azcb_conf_get_setting( 'verify_button_text' ),
-            'footer'      => azcb_conf_replace_placeholders( azcb_conf_get_setting( 'verify_footer' ) ),
-            'errors'      => $this->errors,
-            'form_data'   => $form_data,
+            'heading'         => azcb_conf_get_setting( 'verify_heading' ),
+            'intro'           => azcb_conf_replace_placeholders( azcb_conf_get_setting( 'verify_intro' ) ),
+            'nonmember_text'  => azcb_conf_get_setting( 'verify_nonmember_text' ),
+            'nonmember_url'   => $this->get_register_url(),
+            'button_text'     => azcb_conf_get_setting( 'verify_button_text' ),
+            'footer'          => azcb_conf_replace_placeholders( azcb_conf_get_setting( 'verify_footer' ) ),
+            'errors'          => $this->errors,
+            'form_data'       => $form_data,
         ) );
     }
 
@@ -252,9 +265,8 @@ class AZCB_Conf_Registration {
         ) );
     }
 
-    /** Registration form (accessed via magic link). */
+    /** Registration form (accessed via magic link OR directly for non-members). */
     public function shortcode_register( $atts ) {
-        // Require a valid token.
         $token_str = isset( $_GET['token'] ) ? sanitize_text_field( wp_unslash( $_GET['token'] ) ) : '';
 
         // If POST failed validation, the token is in the POST data.
@@ -262,42 +274,38 @@ class AZCB_Conf_Registration {
             $token_str = sanitize_text_field( wp_unslash( $_POST['azcb_token'] ) );
         }
 
-        if ( ! $token_str ) {
-            // No token — redirect to verify page.
-            $verify_page = get_option( 'azcb_conf_page_verify' );
-            if ( $verify_page ) {
-                wp_safe_redirect( get_permalink( $verify_page ) );
-                exit;
-            }
-            return '<p>' . esc_html__( 'Please start the registration process from the conference page.', 'azcb-conference' ) . '</p>';
-        }
-
-        $token = AZCB_Conf_Magic_Link::validate( $token_str );
-        if ( is_wp_error( $token ) ) {
-            $verify_url  = get_permalink( get_option( 'azcb_conf_page_verify' ) );
-            $verify_link = $verify_url ? $verify_url : home_url( '/conference/verify/' );
-            return '<div class="azcb-notice azcb-notice-error" role="alert"><p>'
-                 . esc_html( $token->get_error_message() )
-                 . '</p><p><a href="' . esc_url( $verify_link ) . '">Start again</a></p></div>';
-        }
-
-        // Pre-fill from token + member data.
+        // Pre-fill from token + member data (member path).
         $form_data = array(
-            'first_name'   => $token['first_name'],
-            'last_name'    => $token['last_name'],
-            'email'        => $token['email'],
+            'first_name'   => '',
+            'last_name'    => '',
+            'email'        => '',
             'mobile_phone' => '',
             'zip_code'     => '',
         );
 
-        if ( $token['is_member'] && $token['member_data'] ) {
-            $member = json_decode( $token['member_data'], true );
-            if ( is_array( $member ) ) {
-                if ( ! empty( $member['Mobile Phone'] ) ) {
-                    $form_data['mobile_phone'] = $member['Mobile Phone'];
-                }
-                if ( ! empty( $member['Zip'] ) ) {
-                    $form_data['zip_code'] = $member['Zip'];
+        if ( $token_str ) {
+            $token = AZCB_Conf_Magic_Link::validate( $token_str );
+            if ( is_wp_error( $token ) ) {
+                $verify_url  = get_permalink( get_option( 'azcb_conf_page_verify' ) );
+                $verify_link = $verify_url ? $verify_url : home_url( '/conference/verify/' );
+                return '<div class="azcb-notice azcb-notice-error" role="alert"><p>'
+                     . esc_html( $token->get_error_message() )
+                     . '</p><p><a href="' . esc_url( $verify_link ) . '">Start again</a></p></div>';
+            }
+
+            $form_data['first_name'] = $token['first_name'];
+            $form_data['last_name']  = $token['last_name'];
+            $form_data['email']      = $token['email'];
+
+            if ( $token['is_member'] && $token['member_data'] ) {
+                $member = json_decode( $token['member_data'], true );
+                if ( is_array( $member ) ) {
+                    if ( ! empty( $member['Mobile Phone'] ) ) {
+                        $form_data['mobile_phone'] = $member['Mobile Phone'];
+                    }
+                    if ( ! empty( $member['Zip'] ) ) {
+                        $form_data['zip_code'] = $member['Zip'];
+                    }
                 }
             }
         }
@@ -363,5 +371,12 @@ class AZCB_Conf_Registration {
         ob_start();
         require AZCB_CONF_DIR . 'templates/' . $name . '.php';
         return ob_get_clean();
+    }
+
+    /* ─── URL helpers ─────────────────────────────────────────── */
+
+    private function get_register_url() {
+        $page = get_option( 'azcb_conf_page_register' );
+        return $page ? get_permalink( $page ) : home_url( '/conference/register/' );
     }
 }

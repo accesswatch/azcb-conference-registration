@@ -2,7 +2,7 @@
 /*
 Plugin Name: AZCB Conference Registration
 Plugin URI:  https://github.com/accesswatch/azcb-conference-registration
-Description: Conference registration system for the Arizona Council of the Blind 2026 Annual Conference and Business Meeting. Unified flow with magic-link email verification and automatic membership detection.
+Description: Conference registration system for the Arizona Council of the Blind 2026 Annual Conference and Business Meeting. Two-path flow: members verify via magic-link email with automatic membership detection; non-members register directly.
 Version:     1.0.0
 Author:      AccessWatch
 License:     GPLv2 or later
@@ -84,33 +84,30 @@ function azcb_conf_defaults() {
         'gf_field_email'             => '',
 
         /* ── Verify page ────────────────────────────────────────── */
-        'verify_heading'     => 'Conference Registration — Email Verification',
-        'verify_intro'       => 'Welcome! To register for the 2026 AZCB Conference and Annual Business Meeting, please provide the following information. We will send you an email with a link to complete your registration.',
-        'verify_button_text' => 'Continue',
-        'verify_footer'      => 'Have Questions? If you have questions about the conference, or if you wish to inquire about sponsoring the conference or making a donation, please <a href="{contact_url}">Send us a Message</a>.',
+        'verify_heading'         => 'Conference Registration for AZCB Members',
+        'verify_intro'           => 'If you are an AZCB member, please fill in the following information, so we can verify your eligibility, and simplify your online conference registration.',
+        'verify_nonmember_text'  => 'Non-members, please tap this button to be taken to the online registration form.',
+        'verify_button_text'     => 'Verify Membership Status',
+        'verify_footer'          => '<strong>Have Questions?</strong>' . "\n\n" . 'If you have questions about the conference, or if you wish to inquire about sponsoring the conference or making a donation, please <a href="{contact_url}">Send us a Message</a>.',
 
         /* ── Sent page ──────────────────────────────────────────── */
-        'sent_heading' => 'Check Your Email',
-        'sent_message' => 'Thanks! We\'ve sent a registration link to your email address. Please check your inbox and click the link to continue with conference registration. Note: This link expires in <strong>{expiry_minutes} minutes</strong>.',
+        'sent_heading' => 'Verifying Your Membership Status',
+        'sent_message' => 'Thanks for submitting your Membership Verification. Please go to your email inbox and click the link to continue with the Conference Registration. Note: This link expires in <strong>{expiry_minutes} minutes</strong>.',
 
         /* ── Register page ──────────────────────────────────────── */
         'register_heading'     => '2026 Arizona Council of the Blind Annual Conference and Business Meeting — Registration Page',
-        'register_intro'       => 'We\'re excited to welcome you to the Arizona Council of the Blind\'s 2026 Annual Conference and Business Meeting. There is no cost to attend this virtual event, but you do need to register by providing the following information.',
+        'register_intro'       => 'We\'re excited to welcome you to the Arizona Council of the Blind\'s 2026 Annual Conference and Business Meeting. There is no cost to attend this virtual event, but you do need to register by providing the following information. All fields are required.',
         'register_button_text' => 'Complete your Registration',
 
         /* ── Member confirmation ────────────────────────────────── */
         'member_confirm_heading' => 'Confirmation',
-        'member_confirm_message' => 'Thank you for registering for the 2026 AZCB Conference and Annual Business Meeting! As a member of AZCB, you will receive links for all conference related meetings, including the AZCB Annual Business Meeting.'
-            . "\n\n" . 'AZCB leadership will cross-reference your registration to verify your information. Once confirmed, we will forward all convention-related details to you.'
-            . "\n\n" . 'If you do not receive these details by Thursday, April 10, and/or if you have questions about the conference, please <a href="{contact_url}">Contact us Here</a>.',
+        'member_confirm_message' => 'Thank you for registering for the 2026 AZCB Conference and Annual Business Meeting! As a member of AZCB, you will receive links for all conference related meetings, including the AZCB Annual Business Meeting. If you do not receive these links by Thursday, April 10, and/or if you have questions about the conference, please <a href="{contact_url}">Contact us Here</a>.',
 
         /* ── Non-member confirmation ────────────────────────────── */
         'nonmember_confirm_heading' => 'Confirmation',
-        'nonmember_confirm_message' => 'Thank you for registering for the 2026 AZCB Conference! You will receive links for conference-related meetings.'
-            . "\n\n" . 'AZCB leadership will cross-reference your registration to verify your information. Once confirmed, we will forward all convention-related details to you.'
-            . "\n\n" . 'Our records did not show a current AZCB membership associated with your information. If you believe you are a member in good standing (meaning that you have registered and paid dues for 2026), please <a href="{contact_url}">Contact us Here</a> and we will be happy to verify your status and ensure you receive access to the Annual Business Meeting.'
+        'nonmember_confirm_message' => 'Thank you for registering for the 2026 AZCB Conference. Our records indicate that you are not currently a member of the Arizona Council of the Blind, so you will receive links for conference-related meetings, but not for the AZCB Annual Business Meeting.'
             . "\n\n" . 'If you would like to become a member of the AZCB, please visit the <a href="{membership_url}">Membership Page</a>, fill in the required information, and provide the required dues, and we will happily add you to our growing organization. If you do so before the start of the convention, you will then be able to join us for our 2026 Annual Business Meeting.'
-            . "\n\n" . 'If you have other questions about the conference, please <a href="{contact_url}">Contact us Here</a>.',
+            . "\n\n" . 'If you believe you are a member in good standing (meaning that you have registered and paid dues for 2026), and/or if you have other questions about the conference, please <a href="{contact_url}">Contact us Here</a>.',
 
         /* ── Magic link email ───────────────────────────────────── */
         'magic_link_email_subject' => 'AZCB Conference Registration — Verify Your Email',
@@ -125,18 +122,15 @@ function azcb_conf_defaults() {
         /* ── Member confirmation email ──────────────────────────── */
         'member_email_subject' => 'AZCB Conference Registration — Confirmation',
         'member_email_body'    => 'Hi {first_name},'
-            . "\n\n" . 'Thank you for registering for the 2026 AZCB Conference and Annual Business Meeting! As a member of AZCB, you will receive links for all conference related meetings, including the AZCB Annual Business Meeting.'
-            . "\n\n" . 'AZCB leadership will cross-reference your registration to verify your information. Once confirmed, we will forward all convention-related details to you.'
-            . "\n\n" . 'If you do not receive these details by Thursday, April 10, and/or if you have questions about the conference, please visit <a href="{contact_url}">{contact_url}</a>.'
+            . "\n\n" . 'Thank you for registering for the 2026 AZCB Conference and Annual Business Meeting! As a member of AZCB, you will receive links for all conference related meetings, including the AZCB Annual Business Meeting. If you do not receive these links by Thursday, April 10, and/or if you have questions about the conference, please visit <a href="{contact_url}">{contact_url}</a>.'
             . "\n\n" . 'Arizona Council of the Blind',
 
         /* ── Non-member confirmation email ──────────────────────── */
         'nonmember_email_subject' => 'AZCB Conference Registration — Confirmation',
         'nonmember_email_body'    => 'Hi {first_name},'
-            . "\n\n" . 'Thank you for registering for the 2026 AZCB Conference! You will receive links for conference-related meetings.'
-            . "\n\n" . 'AZCB leadership will cross-reference your registration to verify your information. Once confirmed, we will forward all convention-related details to you.'
-            . "\n\n" . 'Our records did not show a current AZCB membership associated with your information. If you believe you are a member in good standing, please visit <a href="{contact_url}">{contact_url}</a> and we will be happy to verify your status.'
-            . "\n\n" . 'If you would like to become a member, please visit <a href="{membership_url}">{membership_url}</a> for more information.'
+            . "\n\n" . 'Thank you for registering for the 2026 AZCB Conference. Our records indicate that you are not currently a member of the Arizona Council of the Blind, so you will receive links for conference-related meetings, but not for the AZCB Annual Business Meeting.'
+            . "\n\n" . 'If you would like to become a member of the AZCB, please visit the <a href="{membership_url}">Membership Page</a>, fill in the required information, and provide the required dues, and we will happily add you to our growing organization. If you do so before the start of the convention, you will then be able to join us for our 2026 Annual Business Meeting.'
+            . "\n\n" . 'If you believe you are a member in good standing (meaning that you have registered and paid dues for 2026), and/or if you have other questions about the conference, please visit <a href="{contact_url}">{contact_url}</a>.'
             . "\n\n" . 'Arizona Council of the Blind',
     );
 }

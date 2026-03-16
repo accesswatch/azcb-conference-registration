@@ -229,7 +229,7 @@ class AZCB_Conf_Admin {
         }
 
         $text_fields = array(
-            'verify_heading', 'verify_button_text', 'sent_heading',
+            'verify_heading', 'verify_button_text', 'verify_nonmember_text', 'sent_heading',
             'register_heading', 'register_button_text',
             'member_confirm_heading', 'nonmember_confirm_heading',
             'magic_link_email_subject', 'member_email_subject', 'nonmember_email_subject',
@@ -323,6 +323,7 @@ class AZCB_Conf_Admin {
         echo '<tr><td colspan="2"><h2>Email Verification Page</h2></td></tr>';
         $this->text_field( 'verify_heading', 'Heading' );
         $this->textarea_field( 'verify_intro', 'Intro Text', 'Shown above the form. HTML allowed.' );
+        $this->text_field( 'verify_nonmember_text', 'Non-Member Link Text', 'regular-text', 'Text shown above the non-member registration button.' );
         $this->text_field( 'verify_button_text', 'Button Text' );
         $this->textarea_field( 'verify_footer', 'Footer', 'Shown below the form. Supports {contact_url}.' );
 
@@ -482,7 +483,7 @@ class AZCB_Conf_Admin {
      */
     private function render_hidden_settings( $all, $current_tab ) {
         $general_keys = array( 'csv_url', 'csv_cache_minutes', 'magic_link_expiry_minutes', 'rate_limit_per_hour', 'contact_url', 'membership_url', 'enable_convention_redirect', 'gf_form_id', 'gf_field_first_name', 'gf_field_last_name', 'gf_field_email' );
-        $pages_keys   = array( 'verify_heading', 'verify_intro', 'verify_button_text', 'verify_footer', 'sent_heading', 'sent_message', 'register_heading', 'register_intro', 'register_button_text', 'member_confirm_heading', 'member_confirm_message', 'nonmember_confirm_heading', 'nonmember_confirm_message' );
+        $pages_keys   = array( 'verify_heading', 'verify_intro', 'verify_nonmember_text', 'verify_button_text', 'verify_footer', 'sent_heading', 'sent_message', 'register_heading', 'register_intro', 'register_button_text', 'member_confirm_heading', 'member_confirm_message', 'nonmember_confirm_heading', 'nonmember_confirm_message' );
         $emails_keys  = array( 'magic_link_email_subject', 'magic_link_email_body', 'member_email_subject', 'member_email_body', 'nonmember_email_subject', 'nonmember_email_body' );
 
         $tab_map = array(

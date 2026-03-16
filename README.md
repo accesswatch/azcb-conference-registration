@@ -7,7 +7,7 @@ Conference registration system for the Arizona Council of the Blind 2026 Annual 
 | Path | Description |
 |------|-------------|
 | `azcb-conference-registration/` | **The WordPress plugin** — everything needed for deployment |
-| `PRD-conference-registration.md` | Product Requirements Document (v 1.2) |
+| `PRD-conference-registration.md` | Product Requirements Document (v 1.3) |
 | `data-model.md` | Database schema documentation |
 | `plugins/code-snippets/` | Legacy membership-lookup Code Snippet (superseded by the plugin) |
 
@@ -40,9 +40,9 @@ Conference registration system for the Arizona Council of the Blind 2026 Annual 
 3. On activation the plugin will:
    * Create two database tables (`wp_azcb_conf_registrations`, `wp_azcb_conf_tokens`).
    * Create four WordPress pages under `/conference/`:
-     * `/conference/verify/` — Email verification form
+     * `/conference/verify/` — Member email verification form
      * `/conference/verify/sent/` — "Check your email" page
-     * `/conference/register/` — Registration form (magic-link entry)
+     * `/conference/register/` — Registration form (members arrive via magic-link; non-members arrive directly)
      * `/conference/register/confirmation/` — Confirmation page
 
 ### Step 3 — Configure Settings
@@ -89,14 +89,15 @@ Edit subjects and bodies for:
 
 ### Step 5 — Link Registration to Your Conference Page
 
-The plugin creates its own `/conference/verify/` page, but you need to connect it to your existing conference page so visitors can find it. Pick one:
+The plugin creates its own pages, but you need to connect them to your existing conference page so visitors can find them. Add two buttons or links:
 
-**Option A — Add a "Register Now" link (recommended):**
+**Option A — Add two registration links (recommended):**
 
-Open your existing `/conference/` page in the WordPress editor and add a button or link pointing to the verify page:
+Open your existing `/conference/` page in the WordPress editor and add buttons for both paths:
 
 ```html
-<a href="/conference/verify/" class="wp-block-button__link">Register for the Conference</a>
+<a href="/conference/verify/" class="wp-block-button__link">Register as an AZCB Member</a>
+<a href="/conference/register/" class="wp-block-button__link">Register as a Non-Member</a>
 ```
 
 This keeps your conference info page as-is and sends visitors into the registration flow when they click.
