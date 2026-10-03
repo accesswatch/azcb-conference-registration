@@ -9,7 +9,16 @@ Conference registration system for the Arizona Council of the Blind 2026 Annual 
 | `azcb-conference-registration/` | **The WordPress plugin** — everything needed for deployment |
 | `PRD-conference-registration.md` | Product Requirements Document (v 1.3) |
 | `data-model.md` | Database schema documentation |
-| `plugins/code-snippets/` | Legacy membership-lookup Code Snippet (superseded by the plugin) |
+| `plugins/code-snippets/` | Membership-lookup Code Snippet used by the Find Membership form (form 13) |
+| `tools/build_members_csv.py` | Converts the roster workbook into the members CSV the lookup reads |
+
+### Refreshing member data each year
+
+1. Run `python tools/build_members_csv.py <roster.xlsx> azcb_members_<year>.csv`. It renames the roster columns to the headers the lookup expects and keeps only active members, those with a membership category.
+2. Upload the CSV to the Media Library.
+3. Update the CSV address in the "AZCB: Lookup + Life Flag + 10-min Gate + EP mirrors" snippet, and in the conference plugin settings if it should use the same list.
+
+Matching uses last name, email, and 5-digit ZIP. First name is optional so nicknames still match.
 
 ---
 

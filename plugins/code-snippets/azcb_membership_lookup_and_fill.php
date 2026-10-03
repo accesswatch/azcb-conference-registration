@@ -98,7 +98,7 @@ function azcb_membership_lookup_and_fill( $entry, $form ) {
     $email = strtolower( trim( rgar( $entry, '31' ) ) );  // Email      (user input)
     $zip   = substr( preg_replace( '/\D/', '', rgar( $entry, '5' ) ), 0, 5 ); // Zip (5-digit)
 
-    if ( ! $first || ! $last || ! $email || ! $zip ) {
+    if ( ! $last || ! $email || ! $zip ) {
         error_log( 'AZCB FindMembership: missing input values.' );
         return $entry;
     }
@@ -166,9 +166,16 @@ function azcb_membership_lookup_and_fill( $entry, $form ) {
         $m_email = strtolower( $get_col( $row, 'Email Address' ) );
         $m_zip   = substr( preg_replace( '/\D/', '', $get_col( $row, 'Zip' ) ), 0, 5 );
 
-        if ( $m_first === $first && $m_last === $last && $m_email === $email && $m_zip === $zip ) {
-            $match_row = $row;
-            break;
+        // First name is not required to match (members may use a nickname).
+        // Prefer a row whose first name also matches, for shared household emails.
+        if ( $m_last === $last && $m_email === $email && $m_zip === $zip ) {
+            if ( $first !== '' && $m_first === $first ) {
+                $match_row = $row;
+                break;
+            }
+            if ( ! $match_row ) {
+                $match_row = $row;
+            }
         }
     }
 
